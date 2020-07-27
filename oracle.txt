@@ -1,0 +1,378 @@
+/*oltp -> insert, delete, upgrade 
+olap-> select grande dados
+*/
+/*
+datablocks -> blocos no disco
+segmento -> objeto do banco de dados
+extends -> tamanho ocupado pelos segmento
+ao criat uma tabela, ela ocupa extends,  que sao formado por datablocks
+*/
+/*
+arquivo dados dbf*/
+
+/*Criando tabela*/
+create table(
+	idcurso int primary key,
+	nome varchar2(30),
+	carga int
+)
+/*dIRECIONAR A TABLESPACE PARA */tablespace users;
+
+create table(
+idteste int,
+nome varchar2(30)
+);
+
+/*dicionarios de dados*/
+select table_name, tablespace_name
+from user_tables;
+
+select table_name, tablespace_name
+from user_tables where table_name = 'cursos';
+
+
+/*TODO OBJETO CRIADO POR PADRAO NA TABLESPACE USERS EXCETO QUANDO SE ESTA LOGADO COM O USUARIO
+SYSTEM-ENTAO O OBJETO SERA CRIADO NA TABLESPACE SYSTEM.*/
+
+SELECT SEGMENT_NAME, SEGMENT_TYPE, TABLESPACE_NAME,
+BYTES,BLOCKS,EXTENTS FROM USER_SEGMENTS;
+
+
+SELECT SEGMENT_NAME, SEGMENT_TYPE, TABLESPACE_NAME,
+BYTES,BLOCKS,EXTENTS FROM USER_SEGMENTS WHERE SEGMENT_NAME = 'CURSOS';
+
+/*Criando  tablespace em determinada localização, atribuindo o tamanho do arquivo, indicando se e auto extendido, proximo a crescer, indicar o tamanho maximo*/
+create tablespace nome da tabela
+datafile 'onde se localiza' size tamanho_do_arquivo /*Caso chegue no limite ele cresce sobre o tamanho*/(AUTOEXTEND)
+on next  o proximo crescimento
+maxsize o tamanho maximo do arquivo;
+/**/
+create tablespace recursos_humano
+datafile 'C:/Data/recrusos_01.dbf' size 100M AUTOEXTEND
+on next  100m
+maxsize 1024M;
+/**/
+Alter tablespace recursos_humano
+add datafile 'C:/Data/recrusos_02.dbf'
+size 200M AUTOEXTEND
+on next  200M
+maxsize 1024M;
+
+
+/*FORMATANDO COLUNAS*/
+
+COLUMN TABLESPACE_NAME FORMAT A20
+COLUMN SEGMENT_NAME FORMAT A20
+COLUMN SEGMENT_TYPE FORMAT A20
+
+/*SEQUENCES*/
+
+SELECT TABLESPACE_NAME, FILE_NAME FROM DBA_DATA_FILES; 
+
+
+/*sequence pode servi para o banco inteiro*/
+
+create sequence seq_geral
+start with 100
+increment by 10;
+
+
+create table funcionarios(
+	idfuncionario int primary key,
+	nome varchar2(30)
+)TABLESPACE RECURSOS_HUMANO;
+
+insert into funcionarios values(seq_geral.nextval,'joao');
+insert into funcionarios values(seq_geral.nextval,'clara');
+insert into funcionarios values(seq_geral.nextval,'lilian');
+
+select * from funcionarios;
+
+
+/*backup*/
+
+create tablespace MARKETING
+datafile 'C:/Data/MK_01.dbf' size 100M AUTOEXTEND
+on next  100m
+maxsize 1024M;
+
+create table campanhas(
+	idcampanha int primary key,
+	nome varchar2(30)
+)TABLESPACE MARKETING;
+
+insert into campanhas values(seq_geral.nextval,'primavera');
+insert into campanhas values(seq_geral.nextval,'verao');
+insert into campanhas values(seq_geral.nextval,'inverno');
+
+select * from funcionarios;
+select * from campanhas;
+
+delete from campanhas where idcampanha = 190 or idcampanha = 200 or idcampanha = 210;
+/*Colocando a ts offiline*/
+alter tablespace recursos_humano offline;
+
+/*Copiar os arquivos do local e transferir para o local desejado*/
+
+/*depois apontar o dicionario de dados*/
+/*Observaçao nao utilizar caracteres especiais na criação de pasta
+*/
+ALTER TABLESPACE recursos_humano
+RENAME DATAFILE 'C:/Data/RECRUSOS_01.DBF' TO 'C:/PRODUCAO/RECRUSOS_01.DBF';
+alter tablespace recursos_humano
+rename datafile 'C:/Data/recrusos_02.dbf' to 'C:/PRODUCAO/recrusos_02.dbf';
+
+--TORNANDO A TABLESPACE ONLINE
+alter tablespace recursos_humano online;
+
+/**/
+
+drop table aluno;
+
+create table aluno(
+	idaluno int primary key,
+	nome varchar2(30),
+	email varchar2(30),
+	salario number(10,2)
+);
+
+/*criação da sequencie sem requisito*/
+create sequence seq_exemplo;
+
+insert into aluno values(seq_exemplo.nextval, 'joao','blabla@bla',1200.00);
+
+insert into aluno values(seq_exemplo.nextval, 'clara','blabla@bla',1300.00);
+insert into aluno values(seq_exemplo.nextval, 'pele','blabla@bla',1500.00);
+insert into aluno values(seq_exemplo.nextval, 'david','blabla@bla',2000.00);
+
+create table aluno2(
+	idaluno int primary key,
+	nome varchar2(30),
+	email varchar2(30),
+	salario number(10,2)
+);
+insert into aluno2 values(seq_exemplo.nextval, 'joao','blabla@bla',1200.00);
+
+insert into aluno2 values(seq_exemplo.nextval, 'clara','blabla@bla',1300.00);
+insert into aluno2 values(seq_exemplo.nextval, 'pele','blabla@bla',1500.00);
+insert into aluno2 values(seq_exemplo.nextval, 'david','blabla@bla',2000.00);
+
+/*rowid rownum*/
+select rowid, idaluno, nome, email, salario from aluno;
+select rowid,rownum, idaluno, nome, email, salario from aluno;
+/*Paginação de resultados*/
+select nome,email from alunos where rownum <=2;
+
+/*Prog dentro da trigger ou procedure*/
+
+
+
+create or replace procedure bonus(P_IDALUNO aluno.idaluno%type, P_PERCENTUAL NUMBER)
+as
+	begin
+		update aluno set salario = salario + (salario * (P_PERCENTUAL /100))
+		where aluno.idaluno = P_IDALUNO;
+	end;
+	
+	/*As triggre devem ter o tamanho maximo de 32m nao exevuta comandos de dtl - commit, roolback e savepoints*/
+	/*validação*/
+	create or replace trigger check_salario
+	before insert or update on aluno
+	for each row 
+	begin
+		if :new.salario > 2000 then
+			raise_application_error(-20000, 'VALOR INCORRETO');
+		end if;
+	end;
+	
+	show errors;
+	 
+	insert into aluno values(seq_exemplo.nextval, 'ygor','1122@333',2500.00);
+	 
+	create or replace trigger check_salario
+	before insert or update on aluno
+	for each row 
+	begin
+		if :new.salario < 2000 then
+			raise_application_error(-20000, 'VALOR INCORRETO');
+		end if;
+	end;
+	
+	/*Vendo as triggrer*/
+	select trigger_name,trigger_body
+	from user_triggers;
+	
+	/*TRIGGER eventos*/
+	create table Auditoria(
+	data_login date,
+	login varchar2(30)
+	);
+	
+	create or replace procedure logpro is
+	begin
+		insert into auditoria(data_login, login)values(sysdate, user);
+	end logpro
+	
+	/**/
+	create or replace trigger logtrigger
+	after logon on database
+	call logpro
+	
+	/*falha de logon*/
+	
+	create or replace falha_logon(
+	after servererror
+	begin
+		if(is_servererror(1017) then
+			insert into auditoria(data_login, login)values(sysdate, 'ora-1017');
+		end if;
+	end falha_logon
+	
+	
+	erros comun
+	
+	--1004 default username feature not support
+	--1005 passorwd null
+	--1045 privelegio insuficiente
+	
+	/*Criando backup via tabela*/
+	create table usuario(
+		id int primary key,
+		nome varchar2(30)
+	);
+	create table bkp_user(
+		id int primary key,
+		nome varchar2(30)
+	);
+	insert into usuario values(1,'davi');
+	insert into usuario values(2,'joao');
+	
+	
+	create or replace trigger bkp_user_trigger
+	before delete on usuario
+	for each row
+		begin
+		insert into bkp_user values(:old.id,:old.nome);
+		end;
+		/
+		
+	/*views*/
+	create table cliente(
+		id int primary key,
+		nome varchar2(30),
+		sexo char(1)
+	);
+	
+	insert into cliente values(1,'davi nicollas','M');
+	
+	create or replace view v_cliente
+	as
+		select id, nome , sexo
+		from cliente;
+	insert into v_cliente values(1007,'clara','F');
+	
+	select * from v_cliente;
+	
+	
+	create or replace view v_cliente_ro
+	as
+		select id, nome , sexo
+		from cliente
+		with read only;
+		
+			insert into v_cliente_ro values(1007,'clara','F');
+			
+	/*inner join em view caso ja esteja criado em todos os telefones*/	
+	create or replace view relatorio
+	as
+		select nome, sexo, numero
+		from cliente
+		inner join Telefone
+		on idcliente = ID_cliente;
+	/*Insert into força view mesmo sem as tabelas criadas*/
+	
+	create or replace force view relatorio as
+		select nome,sexo,numero from cliente
+		inner join telefones
+		on id = id_cliente;
+		
+	create table telefones (
+	idtelefone int primary key,
+	numero varchar2(30),
+	id_cliente int
+	);
+	
+	drop table telefone;
+	
+	alter table telefone add constraint fk_cliente_telefone
+	foreign key(id_cliente)references cliente;
+	
+	
+	/**/
+	insert into telefone values (1,'123456789', 1);
+	
+	/*deferrable*/
+	
+	create table funcionario(
+		/*Criando constraint direto na tabela*/
+		idfuncionario int constraint pk_funcionario primary key,
+		nome varchar2(30);
+		);
+	drop table telefone;
+	
+	create table telefone(
+		idtelefone int primary key,
+		numero varchar2(10),
+		id_funcionario int
+	);
+	/*Criando uma constaitn*/
+	alter table telefone add constraint fk_telefone
+	foreign key(id_funcionario) references funcionario;
+	
+	insert into funcionario values(1,'mauricio');
+	insert into telefone values(10,'36252514',1);
+	/*A constaint de integridade referencia foreing key
+	checa a integridade logo apos o comandode dml.
+	insert/delete/ update - nao possibilitando assim 
+	a inserção de regristo sem referencia */
+	insert into telefone(2, '85858585', 35); 
+	/*Erro pois a forenig key do cliente nao existe*/
+	/*insert into telefone values(2, '85858585', 35)
+	Relatório de erros -
+	ORA-02291: restrição de integridade (SYSTEM.FK_TELEFONE) violada - chave mãe não localizada*/
+	delete from funcionario where  idfuncionario = 1;
+	/*	delete from funcionario where  idfuncionario = 1
+	Relatório de erros -
+	ORA-02292: restrição de integridade (SYSTEM.FK_TELEFONE) violada - registro filho localizado*/
+
+
+/*Verificando o estado das constaint */
+	select constaint_name, deferrable, deferred,
+	from user_constaint where table_name in ('Funcionario','telefone');
+	
+	
+	/*Apagando a constraint*/
+	
+	alter table telefone drop constaint fk_telefon;
+	
+	/*Recriando a constraint*/
+	
+	alter table telefone add constraint fk_telefone foreign key (id_funcionario)
+	references funcionario DEFERRABLE;
+	
+    select constraint_name, deferrable as "atrasada", deferred as "verificação"
+	from user_constraints where table_name in ('FUNCIONARIO','TELEFONE');
+	
+	
+	SELECT * FROM FUNCIONARIO;
+	
+	
+	insert into telefone values(10,'36252514',1);
+	
+	/*MUDANDO PARA A DTL*/
+	set constraints all deferred;
+	insert into telefone values(5,'36252514',2);
+	
+	commit
+	
+	/*O commit apenas validarar as inserção correta*/
