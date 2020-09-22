@@ -1,0 +1,45 @@
+Inicializando um projeto 
+Sempre tranformar dado, antes de carregar para corrigir colunas e formata dados.
+Sempre formata os tipos de dados das colunas.
+Retirar os brancos da coluna TRANSFORMAR-> CORTA
+Em caso de arquivos sem dimensão utilizar o excel par saber onde inicia e termina cada coluna
+Abrir o arquivo no excel e procura uma linha com dado
+Schema Via excel 
+0,8,12,24,32,64,69,73,83,95,115,128
+lembretes
+1- A base de dados deve crescer para baixo
+2- Devemos perguntar o tipo do dado para as linhas.
+Região, estado, cidade, devolução, vendas, data
+Os totais na area de BI e feita por medidas, dessa forma sempre deixar de lado os totais da planilha
+Preenchimento para baixo serve para auto--implement
+Sempre o crescimento e para baixo.
+Trabalhando no arquivo.
+Para converter colunas em linhas vai no icone colunas dinamicas, Seleciona a coluna que sera dividida por exemplo 
+fato de devolução / venda a divisao seria pelo valor dessa forma geraria 2 coluna 1 venda e 1 devolução com os valores divididos
+Quando a estrutura for diferente como por exemplo uma coluna com nomes diferentes, assim e mais facil escolher outra coluna para ser a variavel, nao se aplica em caso de coluna se a unica variavel da tabela
+Nesse caso e possivel remover a primeira linha, e depois alterar o nome de cabeçalho.
+Assim muda as variaveis para globais facilitandoo o serviço.
+No power query, ao desabitar o "Habilitar carga " deixa mostrar no inicio do power query.
+Transpor usas quando a tabela desconfigurada, Assim que as colunas precisam se tranforma em linha e nao tem colunas expecifica.
+Transformando binary em tabela, dessa forma e necessario duplicar a consulta, selecione o passo csv importado, copiar o link
+formula = Csv.Document(Content,[Delimiter=",", Columns=2, Encoding=1252, QuoteStyle=QuoteStyle.None]) logo apos voltar na consulta que esta trabalhando clique em 
+coluna personalizada e cole a formula corrigindo o content Csv.Document([Content],[Delimiter=",", Columns=2, Encoding=65001, QuoteStyle=QuoteStyle.None])
+Trabalhando com abas, primeiro duplicar consutla ir na auxiliar copiar a formula do excel importado = Excel.Workbook(Content),
+Na consulta original adiciponar coluna personalizada colar a formula = Excel.Workbook([Content]). Logo apos isso expandir as tabelas, 
+criar uma coluna personalizada e separar os anos, Selecionar as colunas de fatos qe seria "produtos,conta-corrente,poupança e transforma colunas em linhas.
+Mesclar tabelas de diferentes extensões
+Primeiro adicionar as tabelas, depois combinar acresentar nova consulta selecionar tabelas desejadas , dessa forma gera uma nova consulta.
+Depois disso desabilitar carga nas tabelas que foram combinadas.
+Depois disso mesclar a consulta, 
+selecionar campo de parametro para mesclagem, seleciono a outra consulta e marco a junção desejada. !-Lembrete as junçoes tem a mesma função do "InnerJoin".-!
+Parametros forma de facilitar o local de caminho so e necessario criar em Gerenciar parametros,novo renomear parametros tipo valor atual.Em fonte subistuir o caminho
+com o nome do parametro. Lembrete "Não apaga o nome da consulta".
+
+ 
+
+
+
+
+
+
+
